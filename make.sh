@@ -4,7 +4,7 @@ SRC=minunit_example.c
 EXE=testux
 PP=testux.c
 DUMMY=dummy
-CC=clang
+test $CC || CC=clang
 
 $CC -E $SRC -o $PP
 

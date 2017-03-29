@@ -6,7 +6,7 @@
 /*   By: mcanal <zboub@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/11/15 11:31:07 by mcanal            #+#    #+#             */
-/*   Updated: 2017/03/30 00:02:11 by mc               ###   ########.fr       */
+/*   Updated: 2017/03/30 01:34:48 by mc               ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,98 +78,83 @@ typedef void           (*MU_TEST_FUN)(void);
 #define MAX_NAME_SIZE 63
 struct s_fun
 {
-	char s[MAX_NAME_SIZE + 1];
 	MU_TEST_FUN f;
+	char s[MAX_NAME_SIZE + 1];
 };
 typedef struct s_fun  t_fun;
 
 typedef t_fun MU_TEST_SUITE[];
 
-
-# define WRITE(x, y, z) (void)(write(x, y, z) + 1)
-
-/* #  define PRINT(str, ...) printf((str), __VA_ARGS__) */
-/* #  define PRINT_ERR(str, ...) fprintf(stderr, str, __VA_ARGS__) */
-# define PRINT(x) WRITE(STDIN_FILENO, x, strlen(x))
-# define PRINT_ERR(x) WRITE(STDERR_FILENO, x, strlen(x))
-
-/* #  define PUTS(str, ...) printf(str"\n", __VA_ARGS__) */
-/* #  define PUTS_ERR(str, ...) fprintf(stderr, str"\n", __VA_ARGS__) */
-# define PUTS(x) PRINT(x), WRITE(STDIN_FILENO, "\n", 1)
-# define PUTS_ERR(x) PRINT_ERR(x), WRITE(STDERR_FILENO, "\n", 1)
-
 # define STRINGIFY(x) #x
 # define TOSTRING(x)  STRINGIFY(x)
 # define AT           __FILE__":"TOSTRING(__LINE__)
 
-
-
-# define FAIL_MSG(msg, test, type) WHITE"\n"AT": "RED type WHITE msg	\
+# define FAIL_MSG(test, type, msg) WHITE"\n"AT": "RED type WHITE msg	\
 	BASIC"\n\t("#test")\n\t "GREEN"^\n"BASIC
-# define FAIL_ASSERT_MSG(msg, test) FAIL_MSG(msg, test, "Assertion failed: ")
-# define SIG_ASSERT_MSG(msg, test, sig) FAIL_MSG(msg, test, sig" caught: ")
+# define FAIL_ASSERT_MSG(test, msg) FAIL_MSG(test, "Assertion failed: ", msg)
+# define SIG_ASSERT_MSG(test, sig, msg) FAIL_MSG(test, sig" caught: ", msg)
 # define SUCCESS_ASSERT_MSG         GREEN"."BASIC
 
-# define MU_PASS(msg)       PRINT(GREEN), PRINT(msg), PRINT("\n"BASIC) //TODO
-# define MU_FAIL(msg)       PRINT_ERR(RED), FAIL_MSG(msg, "", "Error: ") //TODO
-# define MU_FAIL_FATAL(msg) MU_FAIL(msg), return  //TODO
+# define MU_PASS(msg, ...) printf(GREEN msg "\n" BASIC, ##__VA_ARGS__) //TODO
+# define MU_FAIL(msg, ...) fprintf(stderr, RED FAIL_MSG("", "Error: ", msg), ##__VA_ARGS__) //TODO
+# define MU_FAIL_FATAL(msg, ...) MU_FAIL(msg, ##__VA_ARGS__), return  //TODO
 
 
-# define HANDLE_SIG(msg, test)                                      \
-	do {                                                            \
-        if (wait(&g_status) != -1 && WIFSIGNALED(g_status))			\
-        {															\
-            switch(WTERMSIG(g_status))								\
-            {														\
-            case SIGSEGV:                                           \
-                PRINT_ERR(SIG_ASSERT_MSG(msg, test, "SIGSEV"));     \
-                break;                                              \
-            case SIGABRT:                                           \
-                PRINT_ERR(SIG_ASSERT_MSG(msg, test, "SIGABRT"));    \
-                break;                                              \
-            case SIGBUS:                                            \
-                PRINT_ERR(SIG_ASSERT_MSG(msg, test, "SIGBUS"));     \
-                break;                                              \
-            case SIGFPE:                                            \
-                PRINT_ERR(SIG_ASSERT_MSG(msg, test, "SIGFPE"));     \
-                break;                                              \
-            case SIGHUP:                                            \
-                PRINT_ERR(SIG_ASSERT_MSG(msg, test, "SIGHUP"));     \
-                break;                                              \
-            case SIGILL:                                            \
-                PRINT_ERR(SIG_ASSERT_MSG(msg, test, "SIGILL"));     \
-                break;                                              \
-            case SIGCHLD:                                           \
-                PRINT_ERR(SIG_ASSERT_MSG(msg, test, "SIGCHLD"));    \
-                break;                                              \
-            case SIGINT:                                            \
-                PRINT_ERR(SIG_ASSERT_MSG(msg, test, "SIGINT"));     \
-                break;                                              \
-            case SIGKILL:                                           \
-                PRINT_ERR(SIG_ASSERT_MSG(msg, test, "SIGKILL"));    \
-                break;                                              \
-            case SIGPIPE:                                           \
-                PRINT_ERR(SIG_ASSERT_MSG(msg, test, "SIGPIPE"));    \
-                break;                                              \
-            case SIGQUIT:                                           \
-                PRINT_ERR(SIG_ASSERT_MSG(msg, test, "SIGQUIT"));    \
-                break;                                              \
-            case SIGTERM:                                           \
-                PRINT_ERR(SIG_ASSERT_MSG(msg, test, "SIGTERM"));    \
-                break;                                              \
-            case SIGALRM:                                           \
-            case SIGVTALRM:                                         \
-            case SIGPROF:                                           \
-                PRINT_ERR(SIG_ASSERT_MSG(msg, test, "SIGALRM"));    \
-                break;                                              \
-            default:                                                \
-                PRINT_ERR(SIG_ASSERT_MSG(msg, test, "???"));        \
-            }														\
-        }															\
+# define HANDLE_SIG(test, msg, ...)										\
+	do {																\
+        if (wait(&g_status) != -1 && WIFSIGNALED(g_status))				\
+        {																\
+            switch(WTERMSIG(g_status))									\
+            {															\
+				case SIGSEGV:                                           \
+					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGSEV", msg), ##__VA_ARGS__); \
+					break;                                              \
+				case SIGABRT:                                           \
+					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGABRT", msg), ##__VA_ARGS__); \
+					break;                                              \
+				case SIGBUS:                                            \
+					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGBUS", msg), ##__VA_ARGS__); \
+					break;                                              \
+				case SIGFPE:                                            \
+					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGFPE", msg), ##__VA_ARGS__); \
+					break;                                              \
+				case SIGHUP:                                            \
+					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGHUP", msg), ##__VA_ARGS__); \
+					break;                                              \
+				case SIGILL:                                            \
+					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGILL", msg), ##__VA_ARGS__); \
+					break;                                              \
+				case SIGCHLD:                                           \
+					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGCHLD", msg), ##__VA_ARGS__); \
+					break;                                              \
+				case SIGINT:                                            \
+					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGINT", msg), ##__VA_ARGS__); \
+					break;                                              \
+				case SIGKILL:                                           \
+					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGKILL", msg), ##__VA_ARGS__); \
+					break;                                              \
+				case SIGPIPE:                                           \
+					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGPIPE", msg), ##__VA_ARGS__); \
+					break;                                              \
+				case SIGQUIT:                                           \
+					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGQUIT", msg), ##__VA_ARGS__); \
+					break;                                              \
+				case SIGTERM:                                           \
+					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGTERM", msg), ##__VA_ARGS__); \
+					break;                                              \
+				case SIGALRM:                                           \
+				case SIGVTALRM:                                         \
+				case SIGPROF:                                           \
+					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGALRM", msg), ##__VA_ARGS__); \
+					break;                                              \
+				default:                                                \
+					fprintf(stderr, SIG_ASSERT_MSG(test, "???", msg), ##__VA_ARGS__);	\
+            }															\
+        }																\
 	} while (0)
 
 
-# define MU_ASSERT(msg, test)											\
+# define MU_ASSERT(test, msg, ...)										\
 	do {																\
 		if (g_exit) {													\
 			g_exit = FALSE;												\
@@ -178,13 +163,13 @@ typedef t_fun MU_TEST_SUITE[];
 		if (!fork()) {													\
             alarm(3);													\
 			if ((test)) {												\
-				PRINT(SUCCESS_ASSERT_MSG);								\
+				printf(SUCCESS_ASSERT_MSG);								\
 				exit(EXIT_SUCCESS);										\
 			}															\
-			PRINT_ERR(FAIL_ASSERT_MSG(msg, test));						\
+			fprintf(stderr, FAIL_ASSERT_MSG(test, msg), ##__VA_ARGS__);	\
             exit(EXIT_FAILURE);											\
         } else {														\
-            HANDLE_SIG(msg, test);										\
+            HANDLE_SIG(test, msg, ##__VA_ARGS__);							\
 			if (WIFEXITED(g_status) && WEXITSTATUS(g_status) == EXIT_SUCCESS) \
 				g_asserts_success++;									\
 			else														\
@@ -193,11 +178,11 @@ typedef t_fun MU_TEST_SUITE[];
         }																\
 	} while (0)
 
-# define MU_ASSERT_FATAL(msg, test)										\
+# define MU_ASSERT_FATAL(test, msg, ...)								\
 	do {																\
-		MU_ASSERT(msg, test);											\
+		MU_ASSERT(test, msg, ##__VA_ARGS__);								\
 		if (!WIFEXITED(g_status) || WEXITSTATUS(g_status) != EXIT_SUCCESS) \
-			return ;												\
+			return ;													\
 	} while (0) //TODO
 
 # define MU_RUN_TEST(test)						\
@@ -207,57 +192,61 @@ typedef t_fun MU_TEST_SUITE[];
 		g_tests_run++;							\
 		if (g_success)							\
 			g_tests_success++;					\
-		PUTS("");								\
+		printf("\n");							\
 	} while (0)
 
-# define MU_RUN_SUITE(name, suite)                                      \
+# define MU_RUN_SUITE(suite, name)										\
 	do {                                                                \
-        PUTS("+ Running suite "name":");								\
+        printf("+ Suite "name":\n");									\
 		int tests_run = g_tests_run;									\
 		int tests_success = g_tests_success;							\
 		int asserts_run = g_asserts_run;								\
 		int asserts_success = g_asserts_success;						\
         for (size_t ii = 0; ii < sizeof(suite) / sizeof(t_fun); ii++) {	\
-			printf("-%s: ", suite[ii].s);								\
+			printf("++ Test %s: ", suite[ii].s);						\
             MU_RUN_TEST(suite[ii].f);									\
 		}																\
 		printf("Tests:    %d/%d\n", g_tests_success - tests_success , g_tests_run - tests_run); \
 		printf("Asserts:  %d/%d\n", g_asserts_success - asserts_success, g_asserts_run - asserts_run); \
 		if (g_asserts_success - asserts_success == g_asserts_run - asserts_run)	\
-			MU_PASS("Suite passed!\n");									\
+			printf(GREEN"Suite passed."BASIC"\n\n"), g_suites_success++; \
 		else															\
-			PUTS("");													\
+			printf(RED"Suite failed."BASIC"\n\n");						\
+		g_suites_run++;													\
     } while (0)
 
-#define MU_DUMMY_FUN(x)											\
+#define MU_DUMMY_FUN(x)													\
 	void  __attribute__((weak)) x()										\
 	{																	\
-		PUTS_ERR(WHITE"\n"AT": "RED"Error: "WHITE"missing function"BASIC"\n\t"#x"()\n\t"GREEN"^\n"BASIC); \
+		fprintf(stderr, WHITE"\n"AT": "RED"Error: "WHITE"missing function"BASIC"\n\t"#x"()\n\t"GREEN"^\n"BASIC"\n"); \
 		g_success = FALSE;												\
 		g_exit = TRUE;													\
 	}
 
 
 
-# define MU_HAI()									\
-	do {											\
-		setbuf(stdout, NULL);						\
-		g_tests_run = 0;							\
-		g_tests_success = 0;						\
-		g_asserts_run = 0;							\
-		g_asserts_success = 0;						\
-		g_success = TRUE;							\
-		g_status = 0;								\
-		g_exit = FALSE;								\
+# define MU_HAI()								\
+	do {										\
+		setbuf(stdout, NULL);					\
+		g_tests_run = 0;						\
+		g_tests_success = 0;					\
+		g_asserts_run = 0;						\
+		g_asserts_success = 0;					\
+		g_suites_run = 0;						\
+		g_suites_success = 0;					\
+		g_success = TRUE;						\
+		g_status = 0;							\
+		g_exit = FALSE;							\
 	} while (0)
 
 # define MU_KTHXBYE()													\
 	do {																\
+		printf("Total Suites:   %d/%d\n", g_suites_success, g_suites_run); \
 		printf("Total Tests:    %d/%d\n", g_tests_success, g_tests_run); \
 		printf("Total Asserts:  %d/%d\n", g_asserts_success, g_asserts_run); \
 		if (g_asserts_success == g_asserts_run)							\
 			MU_PASS("\nAll tests passed!"), exit(EXIT_SUCCESS);			\
-		PUTS(RED"Some test(s) failed :/"BASIC);							\
+		printf(RED"Some test(s) failed :/\n"BASIC);						\
 		exit(EXIT_FAILURE);												\
 	} while (0)
 
@@ -268,6 +257,9 @@ int g_tests_success;
 
 int g_asserts_run;
 int g_asserts_success;
+
+int g_suites_run;
+int g_suites_success;
 
 int g_success;
 int g_status;
