@@ -6,7 +6,7 @@
 /*   By: mcanal <zboub@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/11/15 11:32:38 by mcanal            #+#    #+#             */
-/*   Updated: 2017/03/30 01:29:43 by mc               ###   ########.fr       */
+/*   Updated: 2017/03/30 23:27:03 by mc               ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,6 @@ MU_DUMMY_FUN(ft_putstr);
 
 //clang throw a warning without the proto, gcc throw an error with it :/
 void ft_putstr(const char *); //would be included from somewhere else
-
 
 static void test_foo()
 {
@@ -72,9 +71,10 @@ static void all_tests()
 }
 
 
+MU_HAI(); //yep, this is really ugly :/
+
 int main()
 {
-	MU_HAI();
 
 	all_tests();
 

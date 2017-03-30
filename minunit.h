@@ -6,7 +6,7 @@
 /*   By: mcanal <zboub@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/11/15 11:31:07 by mcanal            #+#    #+#             */
-/*   Updated: 2017/03/30 01:34:48 by mc               ###   ########.fr       */
+/*   Updated: 2017/03/30 23:29:06 by mc               ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,67 +92,13 @@ typedef t_fun MU_TEST_SUITE[];
 # define FAIL_MSG(test, type, msg) WHITE"\n"AT": "RED type WHITE msg	\
 	BASIC"\n\t("#test")\n\t "GREEN"^\n"BASIC
 # define FAIL_ASSERT_MSG(test, msg) FAIL_MSG(test, "Assertion failed: ", msg)
-# define SIG_ASSERT_MSG(test, sig, msg) FAIL_MSG(test, sig" caught: ", msg)
+# define SIG_STR(sig) ((sig) >= MIN_SIG && (sig) <= MAX_SIG ? g_sig_str[(sig)] : "SIG???")
+# define SIG_ASSERT_MSG(test, msg) FAIL_MSG(test, "%s caught: ", msg)
 # define SUCCESS_ASSERT_MSG         GREEN"."BASIC
 
 # define MU_PASS(msg, ...) printf(GREEN msg "\n" BASIC, ##__VA_ARGS__) //TODO
 # define MU_FAIL(msg, ...) fprintf(stderr, RED FAIL_MSG("", "Error: ", msg), ##__VA_ARGS__) //TODO
 # define MU_FAIL_FATAL(msg, ...) MU_FAIL(msg, ##__VA_ARGS__), return  //TODO
-
-
-# define HANDLE_SIG(test, msg, ...)										\
-	do {																\
-        if (wait(&g_status) != -1 && WIFSIGNALED(g_status))				\
-        {																\
-            switch(WTERMSIG(g_status))									\
-            {															\
-				case SIGSEGV:                                           \
-					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGSEV", msg), ##__VA_ARGS__); \
-					break;                                              \
-				case SIGABRT:                                           \
-					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGABRT", msg), ##__VA_ARGS__); \
-					break;                                              \
-				case SIGBUS:                                            \
-					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGBUS", msg), ##__VA_ARGS__); \
-					break;                                              \
-				case SIGFPE:                                            \
-					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGFPE", msg), ##__VA_ARGS__); \
-					break;                                              \
-				case SIGHUP:                                            \
-					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGHUP", msg), ##__VA_ARGS__); \
-					break;                                              \
-				case SIGILL:                                            \
-					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGILL", msg), ##__VA_ARGS__); \
-					break;                                              \
-				case SIGCHLD:                                           \
-					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGCHLD", msg), ##__VA_ARGS__); \
-					break;                                              \
-				case SIGINT:                                            \
-					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGINT", msg), ##__VA_ARGS__); \
-					break;                                              \
-				case SIGKILL:                                           \
-					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGKILL", msg), ##__VA_ARGS__); \
-					break;                                              \
-				case SIGPIPE:                                           \
-					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGPIPE", msg), ##__VA_ARGS__); \
-					break;                                              \
-				case SIGQUIT:                                           \
-					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGQUIT", msg), ##__VA_ARGS__); \
-					break;                                              \
-				case SIGTERM:                                           \
-					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGTERM", msg), ##__VA_ARGS__); \
-					break;                                              \
-				case SIGALRM:                                           \
-				case SIGVTALRM:                                         \
-				case SIGPROF:                                           \
-					fprintf(stderr, SIG_ASSERT_MSG(test, "SIGALRM", msg), ##__VA_ARGS__); \
-					break;                                              \
-				default:                                                \
-					fprintf(stderr, SIG_ASSERT_MSG(test, "???", msg), ##__VA_ARGS__);	\
-            }															\
-        }																\
-	} while (0)
-
 
 # define MU_ASSERT(test, msg, ...)										\
 	do {																\
@@ -169,20 +115,24 @@ typedef t_fun MU_TEST_SUITE[];
 			fprintf(stderr, FAIL_ASSERT_MSG(test, msg), ##__VA_ARGS__);	\
             exit(EXIT_FAILURE);											\
         } else {														\
-            HANDLE_SIG(test, msg, ##__VA_ARGS__);							\
-			if (WIFEXITED(g_status) && WEXITSTATUS(g_status) == EXIT_SUCCESS) \
+			if (wait(&g_status) != -1 && WIFSIGNALED(g_status)) {		\
+				fprintf(stderr, SIG_ASSERT_MSG(test, msg), SIG_STR(WTERMSIG(g_status)), ##__VA_ARGS__); \
+			}															\
+			if (WIFEXITED(g_status) && WEXITSTATUS(g_status) == EXIT_SUCCESS) {	\
 				g_asserts_success++;									\
-			else														\
+			} else {													\
 				g_success = FALSE;										\
+			}															\
 			g_asserts_run++;											\
         }																\
 	} while (0)
 
 # define MU_ASSERT_FATAL(test, msg, ...)								\
 	do {																\
-		MU_ASSERT(test, msg, ##__VA_ARGS__);								\
-		if (!WIFEXITED(g_status) || WEXITSTATUS(g_status) != EXIT_SUCCESS) \
+		MU_ASSERT(test, msg, ##__VA_ARGS__);							\
+		if (!WIFEXITED(g_status) || WEXITSTATUS(g_status) != EXIT_SUCCESS) { \
 			return ;													\
+		}																\
 	} while (0) //TODO
 
 # define MU_RUN_TEST(test)						\
@@ -190,14 +140,16 @@ typedef t_fun MU_TEST_SUITE[];
 		g_success = TRUE;						\
 		test();									\
 		g_tests_run++;							\
-		if (g_success)							\
+		if (g_success) {						\
 			g_tests_success++;					\
+		}										\
 		printf("\n");							\
 	} while (0)
 
-# define MU_RUN_SUITE(suite, name)										\
+# define MU_RUN_SUITE(suite, name, ...)									\
 	do {                                                                \
-        printf("+ Suite "name":\n");									\
+		setbuf(stdout, NULL); /* TODO: find a better place for this */	\
+        printf("+ Suite "name":\n", ##__VA_ARGS__);						\
 		int tests_run = g_tests_run;									\
 		int tests_success = g_tests_success;							\
 		int asserts_run = g_asserts_run;								\
@@ -208,10 +160,12 @@ typedef t_fun MU_TEST_SUITE[];
 		}																\
 		printf("Tests:    %d/%d\n", g_tests_success - tests_success , g_tests_run - tests_run); \
 		printf("Asserts:  %d/%d\n", g_asserts_success - asserts_success, g_asserts_run - asserts_run); \
-		if (g_asserts_success - asserts_success == g_asserts_run - asserts_run)	\
-			printf(GREEN"Suite passed."BASIC"\n\n"), g_suites_success++; \
-		else															\
+		if (g_asserts_success - asserts_success == g_asserts_run - asserts_run)	{ \
+			printf(GREEN"Suite passed."BASIC"\n\n");					\
+			g_suites_success++;											\
+		} else {														\
 			printf(RED"Suite failed."BASIC"\n\n");						\
+		}																\
 		g_suites_run++;													\
     } while (0)
 
@@ -225,44 +179,84 @@ typedef t_fun MU_TEST_SUITE[];
 
 
 
-# define MU_HAI()								\
-	do {										\
-		setbuf(stdout, NULL);					\
-		g_tests_run = 0;						\
-		g_tests_success = 0;					\
-		g_asserts_run = 0;						\
-		g_asserts_success = 0;					\
-		g_suites_run = 0;						\
-		g_suites_success = 0;					\
-		g_success = TRUE;						\
-		g_status = 0;							\
-		g_exit = FALSE;							\
-	} while (0)
+# define MU_HAI()														\
+		char g_sig_str[MAX_SIG + 1][MAX_SIG_STR] = {					\
+			"SIG???",													\
+			"SIGHUP",			/* 1: Hangup (POSIX).  */				\
+			"SIGINT",			/* 2: Interrupt (ANSI).  */				\
+			"SIGQUIT",			/* 3: Quit (POSIX).  */					\
+			"SIGILL",			/* 4: Illegal instruction (ANSI).  */	\
+			"SIGTRAP",			/* 5: Trace trap (POSIX).  */			\
+			"SIGABRT",			/* 6: Abort (ANSI).  */					\
+			"SIGBUS",			/* 7: BUS error (4.2 BSD).  */			\
+			"SIGFPE",			/* 8: Floating-point exception (ANSI).  */ \
+			"SIGKILL",			/* 9: Kill, unblockable (POSIX).  */	\
+			"SIGUSR1",			/* 10: User-defined signal 1 (POSIX).  */ \
+			"SIGSEGV",			/* 11: Segmentation violation (ANSI).  */ \
+			"SIGUSR2",			/* 12: User-defined signal 2 (POSIX).  */ \
+			"SIGPIPE",			/* 13: Broken pipe (POSIX).  */			\
+			"SIGALRM",			/* 14: Alarm clock (POSIX).  */			\
+			"SIGTERM",			/* 15: Termination (ANSI).  */			\
+			"SIGSTKFLT",		/* 16: Stack fault.  */					\
+			"SIGCHLD",			/* 17: Child status has changed (POSIX).  */ \
+			"SIGCONT",			/* 18: Continue (POSIX).  */			\
+			"SIGSTOP",			/* 19: Stop, unblockable (POSIX).  */	\
+			"SIGTSTP",			/* 20: Keyboard stop (POSIX).  */		\
+			"SIGTTIN",			/* 21: Background read from tty (POSIX).  */ \
+			"SIGTTOU",			/* 22: Background write to tty (POSIX).  */ \
+			"SIGURG",			/* 23: Urgent condition on socket (4.2 BSD).  */ \
+			"SIGXCPU",			/* 24: CPU limit exceeded (4.2 BSD).  */ \
+			"SIGXFSZ",			/* 25: File size limit exceeded (4.2 BSD).  */ \
+			"SIGVTALRM",		/* 26: Virtual alarm clock (4.2 BSD).  */ \
+			"SIGPROF",			/* 27: Profiling alarm clock (4.2 BSD).  */ \
+			"SIGWINCH",			/* 28: Window size change (4.3 BSD, Sun).  */ \
+			"SIGPOLL",			/* 29: Pollable event occurred (System V).  */ \
+			"SIGPWR",			/* 30: Power failure restart (System V).  */ \
+			"SIGSYS"			/* 31: Bad system call.  */				\
+		};																\
+		int g_tests_run = 0;											\
+		int g_tests_success = 0;										\
+		int g_asserts_run = 0;											\
+		int g_asserts_success = 0;										\
+		int g_suites_run = 0;											\
+		int g_suites_success = 0;										\
+		int g_success = TRUE;											\
+		int g_status = 0;												\
+		int g_exit = FALSE	/* the missing semi-colon is needed */		\
 
 # define MU_KTHXBYE()													\
 	do {																\
 		printf("Total Suites:   %d/%d\n", g_suites_success, g_suites_run); \
 		printf("Total Tests:    %d/%d\n", g_tests_success, g_tests_run); \
 		printf("Total Asserts:  %d/%d\n", g_asserts_success, g_asserts_run); \
-		if (g_asserts_success == g_asserts_run)							\
-			MU_PASS("\nAll tests passed!"), exit(EXIT_SUCCESS);			\
+		if (g_asserts_success == g_asserts_run) {						\
+			MU_PASS("\nAll tests passed!");								\
+			exit(EXIT_SUCCESS);											\
+		}																\
 		printf(RED"Some test(s) failed :/\n"BASIC);						\
 		exit(EXIT_FAILURE);												\
 	} while (0)
 
 
 
-int g_tests_run;
-int g_tests_success;
+# define MIN_SIG SIGHUP
+# define MAX_SIG SIGSYS
+# define MAX_SIG_STR 10
 
-int g_asserts_run;
-int g_asserts_success;
+// the name of each signal by index, according to signum.h
+extern char g_sig_str[MAX_SIG + 1][MAX_SIG_STR];
 
-int g_suites_run;
-int g_suites_success;
+extern int g_tests_run;
+extern int g_tests_success;
 
-int g_success;
-int g_status;
-int g_exit;
+extern int g_asserts_run;
+extern int g_asserts_success;
+
+extern int g_suites_run;
+extern int g_suites_success;
+
+extern int g_success;
+extern int g_status;
+extern int g_exit;
 
 #endif /* MINUNIT */
