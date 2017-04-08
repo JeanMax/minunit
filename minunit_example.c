@@ -6,7 +6,7 @@
 /*   By: mcanal <zboub@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/11/15 11:32:38 by mcanal            #+#    #+#             */
-/*   Updated: 2017/03/30 23:27:03 by mc               ###   ########.fr       */
+/*   Updated: 2017/04/08 13:31:42 by mc               ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,8 +24,9 @@ static void test_foo()
 	MU_ASSERT(7, "foo != 7");
 	MU_ASSERT(foo == 7, "foo != 7");
 	MU_ASSERT(foo == 7, "foo != 7");
-	for (int i = 1; i >= 0; i--)
-		MU_ASSERT(foo / i, "foo / %d", i);
+	//signal handling with fork has been removed
+	/* for (int i = 1; i >= -2; i--) */
+	/* MU_ASSERT(foo / i, "foo / %d", i); */
 }
 
 static void test_bar()
@@ -40,7 +41,6 @@ static void test_bar()
 
 static void test_missing()
 {
-	MU_PASS("cool stuff!");
 	ft_putstr("héhé");
 	MU_ASSERT(5 == 5, "blabla");
 }
@@ -66,7 +66,7 @@ static void all_tests()
 		{test_success, "testing success"},
 	};
 
-	MU_RUN_SUITE(suite_a, "This is difficult");
+	MU_RUN_SUITE(suite_a, "This is %s difficult", "really");
 	MU_RUN_SUITE(suite_b, "but this is way easier");
 }
 
@@ -75,8 +75,13 @@ MU_HAI(); //yep, this is really ugly :/
 
 int main()
 {
-
 	all_tests();
+
+	//you can also just run a test like this, but don't expect anything pretty
+	/* MU_RUN_TEST(test_success); */
+
+	//or search for one test in a suite based on its name
+	/* MU_RUN_TEST_FROM_SUITE(*(av + 1), suite_a); */
 
 	MU_KTHXBYE();
 	return EXIT_SUCCESS;

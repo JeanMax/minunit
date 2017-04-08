@@ -30,7 +30,7 @@ ar -rcs lib$DUMMY.a $DUMMY.o
 # $CC -Wall -Wextra -Wl,--unresolved-symbols=ignore-in-object-files $SRC -o $EXE
 
 # or this with static ones
-$CC -Wall -Wextra $SRC -Wl,--whole-archive lib$DUMMY.a -Wl,--no-whole-archive -o $EXE
+$CC -Wall -Wextra -g $SRC -Wl,--whole-archive lib$DUMMY.a -Wl,--no-whole-archive -o $EXE
 
 rm -f $DUMMY.{c,o} lib$DUMMY.a
 ./$EXE
