@@ -6,7 +6,7 @@
 /*   By: mcanal <zboub@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/11/15 11:31:07 by mcanal            #+#    #+#             */
-/*   Updated: 2017/04/09 13:01:29 by mc               ###   ########.fr       */
+/*   Updated: 2017/09/29 15:44:20 by mc               ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,13 +62,13 @@ typedef t_fun MU_TEST_SUITE[];
 
 # define STRINGIFY(x) #x
 # define TOSTRING(x)  STRINGIFY(x)
-# define AT			  __FILE__":"TOSTRING(__LINE__)
+# define AT			  __FILE__ ":" TOSTRING(__LINE__)
 
-# define FAIL_MSG(test, type, msg)	CLR_WHITE"\n"AT": "CLR_RED type CLR_RESET msg \
-	CLR_RESET"\n\t"test"\n\t "CLR_GREEN"^\n"CLR_RESET
-# define MISSING_FUN_MSG(fun)		FAIL_MSG(" "#fun"()", "Error: ", "missing function")
-# define FAIL_ASSERT_MSG(test, msg) FAIL_MSG("("#test")", "Assertion failed: ", msg)
-# define SUCCESS_ASSERT_MSG			CLR_GREEN"."CLR_RESET
+# define FAIL_MSG(test, type, msg)	CLR_WHITE "\n" AT ": " CLR_RED type CLR_RESET msg \
+	CLR_RESET "\n\t" test "\n\t " CLR_GREEN "^\n" CLR_RESET
+# define MISSING_FUN_MSG(fun)		FAIL_MSG(" " #fun "()", "Error: ", "missing function")
+# define FAIL_ASSERT_MSG(test, msg) FAIL_MSG("(" #test ")", "Assertion failed: ", msg)
+# define SUCCESS_ASSERT_MSG			CLR_GREEN "." CLR_RESET
 
 # define MU_ASSERT(test, msg, ...)										\
 	do {																\
@@ -120,7 +120,7 @@ typedef t_fun MU_TEST_SUITE[];
 # define MU_RUN_SUITE(suite, name, ...)									\
 	do {																\
 		setbuf(stdout, NULL); /* TODO: find a better place for this */	\
-		printf("+ Suite "name":\n", ##__VA_ARGS__);						\
+		printf("+ Suite " name ":\n", ##__VA_ARGS__);					\
 		int tests_run = g_tests_run;									\
 		int tests_success = g_tests_success;							\
 		int asserts_run = g_asserts_run;								\
@@ -133,10 +133,10 @@ typedef t_fun MU_TEST_SUITE[];
 		printf("Asserts:  %d/%d\n", g_asserts_success - asserts_success, g_asserts_run - asserts_run); \
 		if (g_asserts_success - asserts_success == g_asserts_run - asserts_run \
 			&& g_tests_success - tests_success == g_tests_run - tests_run)	{ \
-			printf(CLR_GREEN"Suite passed."CLR_RESET"\n\n");			\
+			printf(CLR_GREEN "Suite passed." CLR_RESET "\n\n");			\
 			g_suites_success++;											\
 		} else {														\
-			printf(CLR_RED"Suite failed."CLR_RESET"\n\n");				\
+			printf(CLR_RED "Suite failed." CLR_RESET "\n\n");			\
 		}																\
 		g_suites_run++;													\
 	} while (0)
@@ -165,10 +165,10 @@ typedef t_fun MU_TEST_SUITE[];
 		printf("Total Tests:	%d/%d\n", g_tests_success, g_tests_run); \
 		printf("Total Asserts:	%d/%d\n", g_asserts_success, g_asserts_run); \
 		if (g_asserts_success == g_asserts_run && g_tests_success == g_tests_run) {	\
-			printf(CLR_GREEN"All tests passed!\n"CLR_RESET);			\
+			printf(CLR_GREEN "All tests passed!\n" CLR_RESET);			\
 			exit(EXIT_SUCCESS);											\
 		}																\
-		printf(CLR_RED"Some test(s) failed :/\n"CLR_RESET);				\
+		printf(CLR_RED "Some test(s) failed :/\n" CLR_RESET);			\
 		exit(EXIT_FAILURE);												\
 	} while (0)
 
